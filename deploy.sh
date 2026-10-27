@@ -295,7 +295,7 @@ info "Initial readiness checks passed."
 echo "Project:       $PROJECT_NAME"
 echo "Portal:        http://<SERVER-IP>/"
 echo "AI Assistant:  http://<SERVER-IP>:3000/"
-echo "Knowledge UI:  http://127.0.0.1:8098/ (localhost only)"
+echo "Knowledge UI:  http://<SERVER-IP>:8098/"
 echo
 echo "Local API endpoints:"
 echo "vLLM:          http://127.0.0.1:8000/v1/models"
