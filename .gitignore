@@ -1,0 +1,33 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Model caches, persistent data, and database backups
+**/data/
+**/models/
+**/redis-backup/
+*.rdb
+
+# Logs and runtime files
+*.log
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Local backups and temporary edits
+*.bak
+*.before-*
+*.tmp
+*~
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

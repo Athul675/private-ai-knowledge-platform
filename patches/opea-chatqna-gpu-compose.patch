@@ -1,0 +1,13 @@
+diff --git a/ChatQnA/docker_compose/nvidia/gpu/compose.yaml b/ChatQnA/docker_compose/nvidia/gpu/compose.yaml
+index ef82acb1..5a15f602 100644
+--- a/ChatQnA/docker_compose/nvidia/gpu/compose.yaml
++++ b/ChatQnA/docker_compose/nvidia/gpu/compose.yaml
+@@ -65,7 +65,7 @@ services:
+       RETRIEVER_COMPONENT_NAME: "OPEA_RETRIEVER_REDIS"
+     restart: unless-stopped
+   tei-reranking-service:
+-    image: ghcr.io/huggingface/text-embeddings-inference:1.5
++    image: ghcr.io/huggingface/text-embeddings-inference:hopper-1.5
+     container_name: tei-reranking-server
+     ports:
+       - "8808:80"

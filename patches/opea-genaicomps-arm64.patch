@@ -1,0 +1,151 @@
+diff --git a/comps/dataprep/src/integrations/utils/store_embeddings.py b/comps/dataprep/src/integrations/utils/store_embeddings.py
+index e140f93b..6c43d36d 100644
+--- a/comps/dataprep/src/integrations/utils/store_embeddings.py
++++ b/comps/dataprep/src/integrations/utils/store_embeddings.py
+@@ -5,7 +5,6 @@ from typing import Any, Dict, List
+ 
+ import numpy as np
+ import torchvision.transforms as T
+-from decord import VideoReader, cpu
+ from langchain_core.embeddings import Embeddings
+ from langchain_vdms.vectorstores import VDMS, VDMS_Client
+ from pydantic import BaseModel, model_validator
+@@ -66,8 +65,9 @@ class vCLIPEmbeddings(BaseModel, Embeddings):
+         return video_features
+ 
+     def load_video_for_vclip(self, vid_path, num_frm=4, max_img_size=224, **kwargs):
+-        # Load video with VideoReader
++        # Load video with VideoReader; decord is optional for text-only deployments.
+         import decord
++        from decord import VideoReader, cpu
+ 
+         decord.bridge.set_bridge("torch")
+         vr = VideoReader(vid_path, ctx=cpu(0))
+diff --git a/comps/dataprep/src/opea_dataprep_microservice.py b/comps/dataprep/src/opea_dataprep_microservice.py
+index 31bdcf28..7b82b158 100644
+--- a/comps/dataprep/src/opea_dataprep_microservice.py
++++ b/comps/dataprep/src/opea_dataprep_microservice.py
+@@ -19,7 +19,8 @@ from integrations.pipecone import OpeaPineConeDataprep
+ from integrations.qdrant import OpeaQdrantDataprep
+ from integrations.redis import OpeaRedisDataprep
+ from integrations.redis_finance import OpeaRedisDataprepFinance
+-from integrations.vdms import OpeaVdmsDataprep
++if os.getenv("DATAPREP_COMPONENT_NAME", "OPEA_DATAPREP_REDIS") == "OPEA_DATAPREP_VDMS":
++    from integrations.vdms import OpeaVdmsDataprep
+ from opea_dataprep_loader import OpeaDataprepLoader
+ 
+ from comps import (
+diff --git a/comps/dataprep/src/requirements-cpu.txt b/comps/dataprep/src/requirements-cpu.txt
+index 7c8c36c1..a01d1994 100644
+--- a/comps/dataprep/src/requirements-cpu.txt
++++ b/comps/dataprep/src/requirements-cpu.txt
+@@ -134,7 +134,6 @@ decorator==5.2.1
+     # via
+     #   ipython
+     #   moviepy
+-decord==0.6.0
+     # via -r ./comps/dataprep/src/requirements.in
+ defusedxml==0.7.1
+     # via
+diff --git a/comps/retrievers/src/integrations/vdms.py b/comps/retrievers/src/integrations/vdms.py
+index 58296beb..8b03a1c5 100644
+--- a/comps/retrievers/src/integrations/vdms.py
++++ b/comps/retrievers/src/integrations/vdms.py
+@@ -8,7 +8,6 @@ from typing import Any, Dict, List
+ import numpy as np
+ import torch.nn as nn
+ import torchvision.transforms as T
+-from decord import VideoReader, cpu
+ from einops import rearrange
+ from langchain_core.embeddings import Embeddings
+ from langchain_huggingface import HuggingFaceEmbeddings
+@@ -210,8 +209,9 @@ class vCLIPEmbeddings(BaseModel, Embeddings):
+         return video_features
+ 
+     def load_video_for_vclip(self, vid_path, num_frm=4, max_img_size=224, **kwargs):
+-        # Load video with VideoReader
++        # Load video with VideoReader; decord is optional for text-only deployments.
+         import decord
++        from decord import VideoReader, cpu
+ 
+         decord.bridge.set_bridge("torch")
+         vr = VideoReader(vid_path, ctx=cpu(0))
+diff --git a/comps/retrievers/src/opea_retrievers_microservice.py b/comps/retrievers/src/opea_retrievers_microservice.py
+index a6ed98e7..f6754be2 100644
+--- a/comps/retrievers/src/opea_retrievers_microservice.py
++++ b/comps/retrievers/src/opea_retrievers_microservice.py
+@@ -15,12 +15,16 @@ from integrations.milvus import OpeaMilvusRetriever
+ from integrations.neo4j import OpeaNeo4jRetriever
+ from integrations.opengauss import OpeaOpenGaussRetriever
+ from integrations.opensearch import OpeaOpensearchRetriever
+-from integrations.pathway import OpeaPathwayRetriever
++retriever_component_name = os.getenv("RETRIEVER_COMPONENT_NAME", "OPEA_RETRIEVER_REDIS")
++if retriever_component_name == "OPEA_RETRIEVER_PATHWAY":
++    from integrations.pathway import OpeaPathwayRetriever
+ from integrations.pgvector import OpeaPGVectorRetriever
+ from integrations.pinecone import OpeaPineconeRetriever
+ from integrations.qdrant import OpeaQDrantRetriever
+ from integrations.redis import OpeaRedisRetriever
+-from integrations.vdms import OpeaVDMsRetriever
++
++if retriever_component_name == "OPEA_RETRIEVER_VDMS":
++    from integrations.vdms import OpeaVDMsRetriever
+ 
+ from comps import (
+     CustomLogger,
+@@ -47,7 +51,6 @@ from comps.cores.proto.api_protocol import (
+ logger = CustomLogger("opea_retrievers_microservice")
+ logflag = os.getenv("LOGFLAG", False)
+ 
+-retriever_component_name = os.getenv("RETRIEVER_COMPONENT_NAME", "OPEA_RETRIEVER_REDIS")
+ # Initialize OpeaComponentLoader
+ loader = OpeaComponentLoader(
+     retriever_component_name,
+diff --git a/comps/retrievers/src/requirements-cpu.txt b/comps/retrievers/src/requirements-cpu.txt
+index fe95b34f..45ac83ea 100644
+--- a/comps/retrievers/src/requirements-cpu.txt
++++ b/comps/retrievers/src/requirements-cpu.txt
+@@ -137,7 +137,6 @@ dataclasses-json==0.6.7
+     #   llama-index-core
+ decorator==5.2.1
+     # via ipython
+-decord==0.6.0
+     # via -r ./comps/retrievers/src/requirements.in
+ defusedxml==0.7.1
+     # via cairosvg
+@@ -730,7 +729,6 @@ param==2.3.1
+     #   pyviz-comms
+ parso==0.8.5
+     # via jedi
+-pathway==0.27.1
+     # via -r ./comps/retrievers/src/requirements.in
+ patsy==1.0.2
+     # via
+@@ -921,7 +919,6 @@ python-pptx==1.0.2
+     # via
+     #   -r ./comps/retrievers/src/requirements.in
+     #   docling
+-python-sat==1.8.dev26
+     # via pathway
+ pytz==2025.2
+     # via
+diff --git a/comps/retrievers/src/requirements.in b/comps/retrievers/src/requirements.in
+index 6e2cf800..81cc33a5 100644
+--- a/comps/retrievers/src/requirements.in
++++ b/comps/retrievers/src/requirements.in
+@@ -1,7 +1,6 @@
+ aiofiles
+ bs4
+ cairosvg
+-decord
+ docarray[full]
+ docling==2.55.1
+ docx2txt
+@@ -36,7 +35,6 @@ opensearch-py
+ opentelemetry-api==1.27.0
+ opentelemetry-exporter-otlp==1.27.0
+ opentelemetry-sdk==1.27.0
+-pathway
+ Pillow==11.3.0
+ pgvector
+ prometheus-fastapi-instrumentator
